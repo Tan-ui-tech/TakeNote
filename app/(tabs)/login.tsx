@@ -1,11 +1,14 @@
 import React, {useState} from 'react';
 import { View, TextInput, Button, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
 
+
 export default function LoginScreen() {
 
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+
 
   const handleLogin = async () =>{
     if (!username || !password) {
@@ -29,6 +32,8 @@ export default function LoginScreen() {
       if (response.ok){
         Alert.alert('Success', 'Login successful');
         console.log(data);
+
+
       } else {
         Alert.alert('Error', data.message || 'Login failed');
         console.log(data);

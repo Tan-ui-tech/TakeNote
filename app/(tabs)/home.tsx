@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TextInput, Switch, StyleSheet } from 'react-native';
 import { useColorScheme } from 'react-native';
-import {AsyncStorage} from 'react-native';
 
 
 const data = Array(10).fill({}).map((_, i) => ({ key: `Note ${i + 1}` }));
@@ -12,18 +11,18 @@ export default function HomeScreen() {
 
   const toggleSwitch = () => setIsLightMode(!isLightMode);
 
-useEffect(() => {
-  const _storeData = async () => {
-    try {
-      await AsyncStorage.setItem(
-        '@MySuperStore:key',
-        'I like to save it.',
-      );
-    } catch (error) {
-      // Error saving data
-    }
-  };
-},[]);
+// useEffect(() => {
+//   const _storeData = async () => {
+//     try {
+//       await AsyncStorage.setItem(
+//         '@MySuperStore:key',
+//         'I like to save it.',
+//       );
+//     } catch (error) {
+//       // Error saving data
+//     }
+//   };
+// },[]);
 
 
   return (
