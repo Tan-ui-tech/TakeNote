@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TextInput, Switch, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TextInput, Switch, StyleSheet, Alert } from 'react-native';
 import { useColorScheme } from 'react-native';
-import {AsyncStorage} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const data = Array(10).fill({}).map((_, i) => ({ key: `Note ${i + 1}` }));
@@ -12,18 +12,38 @@ export default function HomeScreen() {
 
   const toggleSwitch = () => setIsLightMode(!isLightMode);
 
-useEffect(() => {
-  const _storeData = async () => {
-    try {
-      await AsyncStorage.setItem(
-        '@MySuperStore:key',
-        'I like to save it.',
-      );
-    } catch (error) {
-      // Error saving data
-    }
-  };
-},[]);
+  useEffect(() => {
+    const fetchProtectedData = async () => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+  
+        if (token) {
+          const response = await fetch('http://192.168.25.3:3333/user/', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+  
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Protected data:', data);
+          } else {
+            Alert.alert('Error', 'Failed to fetch protected data');
+          }
+        } else {
+          Alert.alert('Error', 'No token found');
+        }
+      } catch (error) {
+        Alert.alert('Error', 'An unexpected error occurred');
+      }
+    };
+
+      fetchProtectedData();
+  }, []);
+  
+
+
 
 
   return (

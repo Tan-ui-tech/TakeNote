@@ -1,22 +1,27 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import { View, TextInput, Button, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
 
-export default function LoginScreen() {
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+
+//lottiefiles (animation from chrome)
+export default function LoginScreen({navigation}) {
 
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = async () =>{
+
+  const handleLogin = async () => {
     if (!username || !password) {
       Alert.alert('Error', 'Please enter both username and password');
       return;
     }
-
+  
     try {
-      const response = await fetch('http://192.168.1.27:3333/user/login', {
+      const response = await fetch('http://192.168.25.3:3333/user/login', {
         method: 'POST',
-        headers:{
+        headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -25,18 +30,21 @@ export default function LoginScreen() {
         }),
       });
       const data = await response.json();
-
-      if (response.ok){
+      if (response.ok) {
         Alert.alert('Success', 'Login successful');
-        console.log(data);
+        // Store the token
+        
+        console.log(data.token);
+        await AsyncStorage.setItem('userToken', data.token);
+        navigation.navigate('Home');
       } else {
         Alert.alert('Error', data.message || 'Login failed');
-        console.log(data);
       }
-    } catch(error){
+    } catch (error) {
       Alert.alert('Error', 'An unexpected error occurred');
     }
   };
+  
 
 
   return (
