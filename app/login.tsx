@@ -2,10 +2,17 @@ import React, {useEffect, useState} from 'react';
 import { View, TextInput, Button, TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { configureLayoutAnimationBatch } from 'react-native-reanimated/lib/typescript/reanimated2/core';
+import { StackActions } from '@react-navigation/native';
+import { router } from 'expo-router';
+import { setIP } from './ipconfig';
+import { stylez } from './styles';
 
 
 //lottiefiles (animation from chrome)
-export default function LoginScreen({navigation}) {
+
+
+export default function LoginScreen() {
 
 
   const [username, setUsername] = useState('');
@@ -19,7 +26,7 @@ export default function LoginScreen({navigation}) {
     }
   
     try {
-      const response = await fetch('http://192.168.25.3:3333/user/login', {
+      const response = await fetch(`${setIP}/user/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -34,73 +41,51 @@ export default function LoginScreen({navigation}) {
         Alert.alert('Success', 'Login successful');
         // Store the token
         
-        console.log(data.token);
+        // console.log(data.token);
         await AsyncStorage.setItem('userToken', data.token);
-        navigation.navigate('Home');
+
+        router.replace('/home')
       } else {
         Alert.alert('Error', data.message || 'Login failed');
       }
     } catch (error) {
       Alert.alert('Error', 'An unexpected error occurred');
+      console.error(error);
     }
   };
   
 
+  // function redirectToHome() {
+  //   console.log("Logging in ")
+  //   router.replace('/home')
+  // }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+    <View style={stylez.container}>
+      <Text style={stylez.title}>Login</Text>
 
       <TextInput
-        style={styles.input}
+        style={stylez.input}
         placeholder="Username"
         placeholderTextColor="#7C7C7C"
         onChange={(e) => setUsername(e.nativeEvent.text)}
       />
-      
+
       <TextInput
-        style={styles.input}
+        style={stylez.input}
         placeholder="Password"
         placeholderTextColor="#7C7C7C"
         secureTextEntry
         onChange={(e) => setPassword(e.nativeEvent.text)}
       />
 
-      <Button title="Submit" color="#A1CEDC" onPress={handleLogin} />
+      <TouchableOpacity style={stylez.button} onPress={handleLogin}>
+        <Text style={stylez.buttonText}>Submit</Text>
+      </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => { /* Handle navigation to sign-up */ }}>
-        <Text style={styles.link}>No Account?</Text>
+      <TouchableOpacity onPress={() => router.replace('/register')}>
+        <Text style={stylez.link}>No Account?</Text>
       </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
-    padding: 16,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 24,
-  },
-  input: {
-    width: '80%',
-    height: 40,
-    borderColor: '#CCC',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    marginBottom: 16,
-    backgroundColor: '#E0E0E0',
-  },
-  link: {
-    color: '#A1CEDC',
-    marginTop: 16,
-    fontSize: 14,
-  },
-});

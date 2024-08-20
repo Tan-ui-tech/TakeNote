@@ -1,54 +1,101 @@
-import { useState } from "react";
-import { View, TextInput, Button, TouchableOpacity, Text, Alert } from 'react-native';
-
-
-
+import React, { useState } from 'react';
+import { View, TextInput, Button, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
+import { setIP } from './ipconfig';  // Import the configuration
+import { stylez } from './styles';
 
 export default function RegisterScreen() {
-
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
 
+    const handleRegister = async () => {
+        if (!username || !password || !confirmPassword) {
+            Alert.alert('Error', 'All fields are required');
+            return;
+        }
 
-    const handleSign = async () => {
-        {
-            if (username === username && password === password) {
-                Alert.alert('Err', 'Sorry username already exists')
-                return;
+        if (password !== confirmPassword) {
+            Alert.alert('Error', 'Passwords do not match');
+            return;
+        }
+
+        // if (password.length < 8) {
+        //   Alert.alert('Error', 'Password must be at least 8 characters long');
+        //   return;
+        // }
+
+        try {
+            const response = await fetch(`${setIP}/user/register`, {  // Use the imported configuration
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username,
+                    password,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                Alert.alert('Success', 'Registration successful');
+                // Store the token if needed
+
+            //     console.log(data);
+            // await AsyncStorage.setItem('userToken', data.token); # no token can be store in register page
+                
+                router.replace('/login');
             }
-
-            try {
-                const response = await fetch('http://192.168.1.27:3333/user/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        username,
-                        password,
-                    }),
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    Alert.alert('Success', 'Registered successfully');
-                    console.log(data);
-                } else {
-                    Alert.alert('Error', data.message || 'Registration failed');
-                    console.log(data);
-                }
-
-            } catch (error) {
-                Alert.alert('Err', 'An unexpected error occurred');
+            else if (data.message && data.message.includes('already exists')) {
+                Alert.alert('Error', 'This account has already been created');
+            } else {
+                Alert.alert('Error', data.message || 'Registration failed');
             }
-
+        } catch (error) {
+            Alert.alert('Error', 'An unexpected error occurred');
+            console.error(error)
         }
     };
 
+    return (
+        <View style={stylez.container}>
+            <Text style={stylez.title}>Register</Text>
 
-// return(
+            <TextInput
+                style={stylez.input}
+                placeholder="Username"
+                placeholderTextColor="#7C7C7C"
+                onChange={(e) => setUsername(e.nativeEvent.text)}
+            />
 
-// )
+            <TextInput
+                style={stylez.input}
+                placeholder="Password"
+                placeholderTextColor="#7C7C7C"
+                secureTextEntry
+                onChange={(e) => setPassword(e.nativeEvent.text)}
+            />
 
+            <TextInput
+                style={stylez.input}
+                placeholder="Confirm Password"
+                placeholderTextColor="#7C7C7C"
+                secureTextEntry
+                onChange={(e) => setConfirmPassword(e.nativeEvent.text)}
+            />
+
+            <TouchableOpacity style={stylez.button} onPress={handleRegister}>
+                <Text style={stylez.buttonText}>Submit</Text>
+            </TouchableOpacity>
+
+
+
+            <TouchableOpacity onPress={() => router.replace('/login')}>
+                <Text style={stylez.link}>Already have an account?</Text>
+            </TouchableOpacity>
+        </View>
+    );
 }

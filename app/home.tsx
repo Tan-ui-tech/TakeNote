@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TextInput, Switch, StyleSheet, Alert } from 'react-native';
-import { useColorScheme } from 'react-native';
+import { View, Text, FlatList, TextInput, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-
-const data = Array(10).fill({}).map((_, i) => ({ key: `Note ${i + 1}` }));
+import ThemeToggle from './ThemeToggle';
+import { setIP } from './ipconfig';
 
 export default function HomeScreen() {
-  const colorScheme = useColorScheme();
-  const [isLightMode, setIsLightMode] = useState(colorScheme === 'light');
+  const [isLightMode, setIsLightMode] = useState(true);
+  const [notes, setNotes] = useState([]); 
 
   const toggleSwitch = () => setIsLightMode(!isLightMode);
 
@@ -16,19 +14,21 @@ export default function HomeScreen() {
     const fetchProtectedData = async () => {
       try {
         const token = await AsyncStorage.getItem('userToken');
-  
+        console.log(token)
         if (token) {
-          const response = await fetch('http://192.168.25.3:3333/user/', {
+          const response = await fetch(`${setIP}/note/`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`,
             },
           });
-  
+          // console.log(response);
           if (response.ok) {
             const data = await response.json();
-            console.log('Protected data:', data);
+            setNotes(data.data); // Update state with fetched notes
+            
           } else {
+            
             Alert.alert('Error', 'Failed to fetch protected data');
           }
         } else {
@@ -36,31 +36,22 @@ export default function HomeScreen() {
         }
       } catch (error) {
         Alert.alert('Error', 'An unexpected error occurred');
+        console.error(error);
+        
       }
+      
     };
 
-      fetchProtectedData();
+    fetchProtectedData();
   }, []);
-  
-
-
-
 
   return (
     <View style={[styles.container, isLightMode ? styles.lightBackground : styles.darkBackground]}>
       <View style={styles.header}>
         <Text style={[styles.title, isLightMode ? styles.lightText : styles.darkText]}>Note Home</Text>
-        <View style={styles.switchContainer}>
-          <Text style={isLightMode ? styles.lightText : styles.darkText}>Light Mode</Text>
-          <Switch
-            value={isLightMode}
-            onValueChange={toggleSwitch}
-            trackColor={{ false: "#767577", true: "#A1CEDC" }}
-            thumbColor={isLightMode ? "#f4f3f4" : "#f4f3f4"}
-          />
-        </View>
+        <ThemeToggle isLightMode={isLightMode} toggleSwitch={toggleSwitch} />
       </View>
-      
+
       <TextInput
         style={[styles.searchBox, isLightMode ? styles.lightInput : styles.darkInput]}
         placeholder="Search"
@@ -68,7 +59,8 @@ export default function HomeScreen() {
       />
 
       <FlatList
-        data={data}
+        data={notes} // Use state notes here
+        keyExtractor={item => item.id} // Unique key for each item
         renderItem={({ item }) => (
           <View style={[styles.noteCard, isLightMode ? styles.lightCard : styles.darkCard]}>
             <Text style={isLightMode ? styles.lightText : styles.darkText}>{item.key}</Text>
@@ -94,10 +86,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-  },
-  switchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   searchBox: {
     width: '100%',

@@ -1,5 +1,14 @@
-import { Text } from 'react-native';
+import { Link, Redirect, router } from 'expo-router';
+import { useEffect } from 'react';
+import { Button, Pressable, Text, View } from 'react-native';
 
 export default function Page() {
-  return <Text>Top-level page</Text>;
+
+    // useEffect(() => {
+    //     console.log(`${process.env.API_URL}`)
+    // }, [])
+
+    return (
+        <Redirect href="/login" />
+    );
 }
