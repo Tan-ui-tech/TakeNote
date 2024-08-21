@@ -13,7 +13,7 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ isLightMode, toggleSwitch }) 
 
   return (
     <View style={styles.switchContainer}>
-      <Text style={isLightMode ? styles.lightText : styles.darkText}>Light Mode</Text>
+      <Text style={isLightMode ? styles.lightText : styles.darkText}>Night Mode</Text>
       <Switch
         value={isLightMode}
         onValueChange={toggleSwitch}
