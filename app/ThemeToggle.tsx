@@ -9,7 +9,6 @@ interface ThemeToggleProps {
 }
 
 const ThemeToggle: React.FC<ThemeToggleProps> = ({ isLightMode, toggleSwitch }) => {
-  const colorScheme = useColorScheme();
 
   return (
     <View style={styles.switchContainer}>

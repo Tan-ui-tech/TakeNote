@@ -43,12 +43,23 @@ export default function HomeScreen() {
     fetchNotes();
   }, []);
 
+
+  const handleNoteClick = (note) => {
+    setSelectedNote(note);
+    setTitle(note.title);
+    setDescription(note.content);
+  };
+
+  const handleBack = () => {
+    setSelectedNote(null);
+    setTitle('');
+    setDescription('');
+  };
+
   const handleAddNote = async () => {
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (token) {
-        console.log('Token:', token); // Check if token is retrieved
-
         const response = await fetch(`${setIP}/note/`, {
           method: 'POST',
           headers: {
@@ -58,14 +69,12 @@ export default function HomeScreen() {
           body: JSON.stringify({
             title: 'Title here',
             content: 'Description here',
-          }), // Send a default note object
+          }),
         });
 
-        const responseText = await response.text(); // Read response as text for debugging
-        console.log('Response:', responseText); // Check response from server
-
+        const responseText = await response.text();
         if (response.ok) {
-          const newNote = JSON.parse(responseText); // Parse response
+          const newNote = JSON.parse(responseText);
           setNotes([...notes, newNote.data]);
           setTitle('');
           setDescription('');
@@ -81,18 +90,6 @@ export default function HomeScreen() {
     }
   };
 
-  const handleNoteClick = (note) => {
-    setSelectedNote(note);
-    setTitle(note.title);
-    setDescription(note.content);
-  };
-
-  const handleBack = () => {
-    setSelectedNote(null);
-    setTitle('');
-    setDescription('');
-  };
-
   const handleUpdateNote = async (id) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
@@ -103,7 +100,7 @@ export default function HomeScreen() {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ title, content: description }), // Ensure the field names match your API
+          body: JSON.stringify({ title, content: description }),
         });
 
         if (response.ok) {
@@ -120,6 +117,47 @@ export default function HomeScreen() {
       Alert.alert('Error', 'An unexpected error occurred');
       console.error(error);
     }
+  };
+
+  const handleDeleteNote = async (id) => {
+    Alert.alert(
+      'Delete Note',
+      'Are you sure you want to delete this note?',
+      [
+        {
+          text: 'No',
+        },
+        {
+          text: 'Yes',
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('userToken');
+              if (token) {
+                const response = await fetch(`${setIP}/note/${id}`, {
+                  method: 'DELETE',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                  },
+                });
+
+                if (response.ok) {
+                  setNotes(notes.filter(note => note.id !== id));
+                  setSelectedNote(null);
+                } else {
+                  Alert.alert('Error', 'Failed to delete note');
+                }
+              } else {
+                Alert.alert('Error', 'No token found');
+              }
+            } catch (error) {
+              Alert.alert('Error', 'An unexpected error occurred');
+              console.error(error);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   return (
@@ -173,7 +211,7 @@ export default function HomeScreen() {
             style={[
               styles.inputBox,
               isLightMode ? styles.lightInput : styles.darkInput,
-              { color: isLightMode ? '#000' : '#FFF' } // Set text color based on theme
+              { color: isLightMode ? '#000' : '#FFF' }
             ]}
             placeholder="Title"
             placeholderTextColor={isLightMode ? "#7C7C7C" : "#CCC"}
@@ -184,7 +222,7 @@ export default function HomeScreen() {
             style={[
               styles.inputBox,
               isLightMode ? styles.lightInput : styles.darkInput,
-              { color: isLightMode ? '#000' : '#FFF', height: 200 } // Set text color based on theme
+              { color: isLightMode ? '#000' : '#FFF', height: 300, textAlignVertical: 'top' }
             ]}
             placeholder="Description"
             placeholderTextColor={isLightMode ? "#7C7C7C" : "#CCC"}
@@ -192,6 +230,13 @@ export default function HomeScreen() {
             onChangeText={setDescription}
             multiline
           />
+
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDeleteNote(selectedNote.id)}
+          >
+            <Text style={styles.deleteButtonText}>Delete</Text>
+          </TouchableOpacity>
         </>
       )}
     </View>
@@ -208,6 +253,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+    
   },
   title: {
     fontSize: 24,
@@ -280,5 +326,19 @@ const styles = StyleSheet.create({
   },
   darkCard: {
     backgroundColor: '#333',
+  },
+  deleteButton: {
+    position: 'absolute',
+    bottom: 0,
+    left: '62%',
+    marginBottom: 40,
+    transform: [{ translateX: -75 }],
+    backgroundColor: 'transparent',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  deleteButtonText: {
+    fontSize: 24,
+    color: 'red',
   },
 });

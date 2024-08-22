@@ -1,3 +1,3 @@
 
 
-export const setIP = 'http://192.168.8.152:3333';
+export const setIP = 'http://192.168.1.27:3333';
