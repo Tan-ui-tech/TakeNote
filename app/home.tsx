@@ -1,17 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TextInput, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Alert, Animated, Easing } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ThemeToggle from './ThemeToggle';
+import NoteList from '@/components/home/NoteList';
+import NoteEditor from '@/components/home/NoteEditor';
+import NoteHeader from '@/components/home/Header';
+import SearchInput from '@/components/home/SearchInput';
+import AddButton from '@/components/home/AddButton';
 import { setIP } from './ipconfig';
+import { styles } from './styles';
+import { Note } from '@/components/home/NoteCard';
 
 export default function HomeScreen() {
   const [isLightMode, setIsLightMode] = useState(true);
-  const [notes, setNotes] = useState([]);
-  const [selectedNote, setSelectedNote] = useState(null);
+  const [notes, setNotes] = useState([] as Note[]);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [tags, setTags] = useState([''] as string[]);
 
   const toggleSwitch = () => setIsLightMode(!isLightMode);
+  
+  // Initialize both slide and tilt animation values
+  const slideAnim = useRef(new Animated.Value(-500)).current;
+  const tiltAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const fetchNotes = async () => {
@@ -30,6 +42,7 @@ export default function HomeScreen() {
             setNotes(data.data);
           } else {
             Alert.alert('Error', 'Failed to fetch notes');
+            
           }
         } else {
           Alert.alert('Error', 'No token found');
@@ -44,16 +57,58 @@ export default function HomeScreen() {
   }, []);
 
 
-  const handleNoteClick = (note) => {
+
+
+  const handleNoteClick = (note: Note) => {
+    console.log(note,'hellowrldlasdasd');
+
     setSelectedNote(note);
     setTitle(note.title);
     setDescription(note.content);
+
+    let arrName = note.tags.map(item=> item.name)
+    setTags(arrName);
+
+
+    
+    // Animate slide in and tilt
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 0, // Move to the screen
+        duration: 300,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(tiltAnim, {
+        toValue: 1, // Max tilt
+        duration: 300,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: true,
+      })
+    ]).start();
   };
 
   const handleBack = () => {
-    setSelectedNote(null);
-    setTitle('');
-    setDescription('');
+    // Animate slide out and tilt reset
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 500, // Move off-screen
+        duration: 300,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(tiltAnim, {
+        toValue: 0, // Reset tilt
+        duration: 300,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      })
+    ]).start(() => {
+      setSelectedNote(null);
+      setTitle('');
+      setDescription('');
+      setTags(['']);
+    });
   };
 
   const handleAddNote = async () => {
@@ -69,15 +124,21 @@ export default function HomeScreen() {
           body: JSON.stringify({
             title: 'Title here',
             content: 'Description here',
+            tags: ['#tags1'],
           }),
         });
 
         const responseText = await response.text();
+
+        console.log(responseText);
+
         if (response.ok) {
           const newNote = JSON.parse(responseText);
+          // newNote.data.tags = []; //<-  data can't be fetched from server so front-end can call data manually
           setNotes([...notes, newNote.data]);
           setTitle('');
           setDescription('');
+          setTags(['']);
         } else {
           Alert.alert('Error', 'Failed to add note');
         }
@@ -90,8 +151,9 @@ export default function HomeScreen() {
     }
   };
 
-  const handleUpdateNote = async (id) => {
+  const handleUpdateNote = async (id: any) => {
     try {
+      setLoading(true);
       const token = await AsyncStorage.getItem('userToken');
       if (token) {
         const response = await fetch(`${setIP}/note/${id}`, {
@@ -100,7 +162,7 @@ export default function HomeScreen() {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ title, content: description }),
+          body: JSON.stringify({ title, content: description, tags }),
         });
 
         if (response.ok) {
@@ -117,9 +179,10 @@ export default function HomeScreen() {
       Alert.alert('Error', 'An unexpected error occurred');
       console.error(error);
     }
+    setLoading(false);
   };
 
-  const handleDeleteNote = async (id) => {
+  const handleDeleteNote = async (id: any) => {
     Alert.alert(
       'Delete Note',
       'Are you sure you want to delete this note?',
@@ -133,6 +196,7 @@ export default function HomeScreen() {
             try {
               const token = await AsyncStorage.getItem('userToken');
               if (token) {
+                setLoading(true);
                 const response = await fetch(`${setIP}/note/${id}`, {
                   method: 'DELETE',
                   headers: {
@@ -153,6 +217,7 @@ export default function HomeScreen() {
               Alert.alert('Error', 'An unexpected error occurred');
               console.error(error);
             }
+            setLoading(false);
           },
         },
       ],
@@ -160,185 +225,57 @@ export default function HomeScreen() {
     );
   };
 
+  // Interpolating tilt animation
+  const tiltInterpolate = tiltAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['45deg', '0deg'] // Adjust degrees as needed
+  });
+
   return (
     <View style={[styles.container, isLightMode ? styles.lightBackground : styles.darkBackground]}>
       {!selectedNote ? (
-        <>
-          <View style={styles.header}>
-            <Text style={[styles.title, isLightMode ? styles.lightText : styles.darkText]}>Note Home</Text>
-            <ThemeToggle isLightMode={isLightMode} toggleSwitch={toggleSwitch} />
-          </View>
-
-          <TextInput
-            style={[styles.searchBox, isLightMode ? styles.lightInput : styles.darkInput]}
-            placeholder="Search"
-            placeholderTextColor={isLightMode ? "#7C7C7C" : "#CCC"}
+        <View style={{ height: '100%' }}>
+          <NoteHeader
+            title="Note Home"
+            isLightMode={isLightMode}
+            toggleSwitch={toggleSwitch}
           />
-
-          <FlatList
-            data={notes}
-            keyExtractor={item => item.id.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => handleNoteClick(item)}
-                style={[styles.noteCard, isLightMode ? styles.lightCard : styles.darkCard]}
-              >
-                <Text style={isLightMode ? styles.lightText : styles.darkText}>{item.title}</Text>
-              </TouchableOpacity>
-            )}
-            contentContainerStyle={styles.list}
+          <SearchInput isLightMode={isLightMode} />
+          <NoteList
+            notes={notes}
+            isLightMode={isLightMode}
+            onNotePress={handleNoteClick}
           />
-
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={handleAddNote}
-          >
-            <Text style={styles.addButtonText}>+</Text>
-          </TouchableOpacity>
-        </>
+          <AddButton onPress={handleAddNote} />
+        </View>
       ) : (
-        <>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={handleBack}>
-              <Text style={[styles.title, isLightMode ? styles.lightText : styles.darkText]}>Back</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleUpdateNote(selectedNote.id)}>
-              <Text style={[styles.title, isLightMode ? styles.lightText : styles.darkText]}>Save</Text>
-            </TouchableOpacity>
-          </View>
+        <Animated.View
+          style={[
+            {
+              transform: [
+                { translateY: slideAnim },
+                { rotate: tiltInterpolate }
+              ]
+            }
+          ]}
+        >
 
-          <TextInput
-            style={[
-              styles.inputBox,
-              isLightMode ? styles.lightInput : styles.darkInput,
-              { color: isLightMode ? '#000' : '#FFF' }
-            ]}
-            placeholder="Title"
-            placeholderTextColor={isLightMode ? "#7C7C7C" : "#CCC"}
-            value={title}
-            onChangeText={setTitle}
-          />
-          <TextInput
-            style={[
-              styles.inputBox,
-              isLightMode ? styles.lightInput : styles.darkInput,
-              { color: isLightMode ? '#000' : '#FFF', height: 300, textAlignVertical: 'top' }
-            ]}
-            placeholder="Description"
-            placeholderTextColor={isLightMode ? "#7C7C7C" : "#CCC"}
-            value={description}
-            onChangeText={setDescription}
-            multiline
-          />
 
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => handleDeleteNote(selectedNote.id)}
-          >
-            <Text style={styles.deleteButtonText}>Delete</Text>
-          </TouchableOpacity>
-        </>
+          <NoteEditor
+            title={title}
+            description={description}
+            tags={tags}
+            isLightMode={isLightMode}
+            onTitleChange={setTitle}
+            onDescriptionChange={setDescription}
+            onTagsChange={setTags}
+            onSavePress={() => handleUpdateNote(selectedNote.id)}
+            onDeletePress={() => handleDeleteNote(selectedNote.id)}
+            onBackPress={handleBack}
+            loading={loading}
+          />
+        </Animated.View>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  inputBox: {
-    width: '100%',
-    height: 40,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    marginBottom: 16,
-  },
-  searchBox: {
-    width: '100%',
-    height: 40,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    marginBottom: 16,
-  },
-  list: {
-    paddingBottom: 16,
-  },
-  noteCard: {
-    height: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  addButton: {
-    position: 'absolute',
-    bottom: 16,
-    right: 16,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#ff5252',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-    paddingBottom: 5,
-    marginBottom: 25
-  },
-  addButtonText: {
-    fontSize: 36,
-    color: '#FFF',
-  },
-  // Light mode styles
-  lightBackground: {
-    backgroundColor: '#FFF',
-  },
-  lightText: {
-    color: '#000',
-  },
-  lightInput: {
-    backgroundColor: '#E0E0E0',
-  },
-  lightCard: {
-    backgroundColor: '#F0F0F0',
-  },
-  // Dark mode styles
-  darkBackground: {
-    backgroundColor: '#121212',
-  },
-  darkText: {
-    color: '#FFF',
-  },
-  darkInput: {
-    backgroundColor: '#2C2C2C',
-  },
-  darkCard: {
-    backgroundColor: '#333',
-  },
-  deleteButton: {
-    position: 'absolute',
-    bottom: 0,
-    left: '62%',
-    marginBottom: 40,
-    transform: [{ translateX: -75 }],
-    backgroundColor: 'transparent',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  deleteButtonText: {
-    fontSize: 24,
-    color: 'red',
-  },
-});

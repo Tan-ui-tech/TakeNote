@@ -55,7 +55,7 @@ export default function LoginScreen() {
         Alert.alert('Success', 'Login successful');
         // Store the token
 
-        // console.log(data.token);
+        console.log(data.token);
         await AsyncStorage.setItem('userToken', data.token);
 
         router.replace('/home');
