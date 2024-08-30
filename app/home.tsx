@@ -18,6 +18,13 @@ export default function HomeScreen() {
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [tags, setTags] = useState([''] as string[]);
+  const [query, setQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([] as Note[]);
+  
+  const [storedNotes, setStoredNotes] = useState([] as Note[]);
+
+  
+
 
   const toggleSwitch = () => setIsLightMode(!isLightMode);
   
@@ -40,6 +47,7 @@ export default function HomeScreen() {
           if (response.ok) {
             const data = await response.json();
             setNotes(data.data);
+            setStoredNotes(data.data)
           } else {
             Alert.alert('Error', 'Failed to fetch notes');
             
@@ -55,7 +63,6 @@ export default function HomeScreen() {
 
     fetchNotes();
   }, []);
-
 
 
 
@@ -87,6 +94,29 @@ export default function HomeScreen() {
       })
     ]).start();
   };
+
+  const handleSearchChange = (text: string) => {
+    setQuery(text);
+
+    const filteredNotes = storedNotes.filter(note => 
+    // const filteredNotes = notes.filter(note => 
+      note.title.toLowerCase().includes(text.toLowerCase()) || 
+      note.tags.some(tag => tag.name.toLowerCase().includes(text.toLowerCase()))
+    );
+
+    console.log(filteredNotes, 'filteredNotes') 
+
+    // setSearchResults(filteredNotes);
+    if (text === '') setNotes(storedNotes)
+    else setNotes(filteredNotes)
+  };
+
+  const handleSelectResult = (note: Note) => {
+    setQuery('');
+    setSearchResults([]);
+    handleNoteClick(note);
+  };
+  
 
   const handleBack = () => {
     // Animate slide out and tilt reset
@@ -136,6 +166,7 @@ export default function HomeScreen() {
           const newNote = JSON.parse(responseText);
           // newNote.data.tags = []; //<-  data can't be fetched from server so front-end can call data manually
           setNotes([...notes, newNote.data]);
+          setStoredNotes([...storedNotes, newNote.data])  
           setTitle('');
           setDescription('');
           setTags(['']);
@@ -167,7 +198,10 @@ export default function HomeScreen() {
 
         if (response.ok) {
           const updatedNote = await response.json();
+          
           setNotes(notes.map(note => note.id === updatedNote.data.id ? updatedNote.data : note));
+          setStoredNotes(notes.map(note => note.id === updatedNote.data.id ? updatedNote.data : note))
+
           setSelectedNote(null);
         } else {
           Alert.alert('Error', 'Failed to update note');
@@ -206,6 +240,7 @@ export default function HomeScreen() {
 
                 if (response.ok) {
                   setNotes(notes.filter(note => note.id !== id));
+                  setStoredNotes(notes.filter(note => note.id !== id))
                   setSelectedNote(null);
                 } else {
                   Alert.alert('Error', 'Failed to delete note');
@@ -240,7 +275,13 @@ export default function HomeScreen() {
             isLightMode={isLightMode}
             toggleSwitch={toggleSwitch}
           />
-          <SearchInput isLightMode={isLightMode} />
+          <SearchInput
+            isLightMode={isLightMode}
+            query={query}
+            onSearchChange={handleSearchChange}
+            searchResults={searchResults}
+            onSelectResult={handleSelectResult}
+          />
           <NoteList
             notes={notes}
             isLightMode={isLightMode}
@@ -259,8 +300,6 @@ export default function HomeScreen() {
             }
           ]}
         >
-
-
           <NoteEditor
             title={title}
             description={description}
@@ -277,5 +316,5 @@ export default function HomeScreen() {
         </Animated.View>
       )}
     </View>
-  );
+  );;
 }

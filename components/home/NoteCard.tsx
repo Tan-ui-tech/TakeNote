@@ -3,8 +3,6 @@ import React from 'react';
 import { Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 
-
-
 export type Note = {
     id: string;
     title: string;
