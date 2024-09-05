@@ -20,14 +20,14 @@ export default function HomeScreen() {
   const [tags, setTags] = useState([''] as string[]);
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState([] as Note[]);
-  
+
   const [storedNotes, setStoredNotes] = useState([] as Note[]);
 
-  
+
 
 
   const toggleSwitch = () => setIsLightMode(!isLightMode);
-  
+
   // Initialize both slide and tilt animation values
   const slideAnim = useRef(new Animated.Value(-500)).current;
   const tiltAnim = useRef(new Animated.Value(0)).current;
@@ -50,7 +50,7 @@ export default function HomeScreen() {
             setStoredNotes(data.data)
           } else {
             Alert.alert('Error', 'Failed to fetch notes');
-            
+
           }
         } else {
           Alert.alert('Error', 'No token found');
@@ -67,17 +67,17 @@ export default function HomeScreen() {
 
 
   const handleNoteClick = (note: Note) => {
-    console.log(note,'hellowrldlasdasd');
+    console.log(note, 'hellowrldlasdasd');
 
     setSelectedNote(note);
     setTitle(note.title);
     setDescription(note.content);
 
-    let arrName = note.tags.map(item=> item.name)
+    let arrName = note.tags.map(item => item.name)
     setTags(arrName);
 
 
-    
+
     // Animate slide in and tilt
     Animated.parallel([
       Animated.timing(slideAnim, {
@@ -98,13 +98,13 @@ export default function HomeScreen() {
   const handleSearchChange = (text: string) => {
     setQuery(text);
 
-    const filteredNotes = storedNotes.filter(note => 
-    // const filteredNotes = notes.filter(note => 
-      note.title.toLowerCase().includes(text.toLowerCase()) || 
+    const filteredNotes = storedNotes.filter(note =>
+      // const filteredNotes = notes.filter(note => 
+      note.title.toLowerCase().includes(text.toLowerCase()) ||
       note.tags.some(tag => tag.name.toLowerCase().includes(text.toLowerCase()))
     );
 
-    console.log(filteredNotes, 'filteredNotes') 
+    console.log(filteredNotes, 'filteredNotes')
 
     // setSearchResults(filteredNotes);
     if (text === '') setNotes(storedNotes)
@@ -116,7 +116,7 @@ export default function HomeScreen() {
     setSearchResults([]);
     handleNoteClick(note);
   };
-  
+
 
   const handleBack = () => {
     // Animate slide out and tilt reset
@@ -166,7 +166,7 @@ export default function HomeScreen() {
           const newNote = JSON.parse(responseText);
           // newNote.data.tags = []; //<-  data can't be fetched from server so front-end can call data manually
           setNotes([...notes, newNote.data]);
-          setStoredNotes([...storedNotes, newNote.data])  
+          setStoredNotes([...storedNotes, newNote.data])
           setTitle('');
           setDescription('');
           setTags(['']);
@@ -198,16 +198,18 @@ export default function HomeScreen() {
 
         if (response.ok) {
           const updatedNote = await response.json();
-          
+
           setNotes(notes.map(note => note.id === updatedNote.data.id ? updatedNote.data : note));
           setStoredNotes(notes.map(note => note.id === updatedNote.data.id ? updatedNote.data : note))
 
           setSelectedNote(null);
-        } else {
+        } else if(title == ''){
+          Alert.alert('Error', 'Title cannot be empty');
+
+        }
+        else {
           Alert.alert('Error', 'Failed to update note');
         }
-      } else {
-        Alert.alert('Error', 'No token found');
       }
     } catch (error) {
       Alert.alert('Error', 'An unexpected error occurred');

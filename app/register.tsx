@@ -11,7 +11,7 @@ export default function RegisterScreen() {
     const [confirmPassword, setConfirmPassword] = useState('');
 
     const handleRegister = async () => {
-        if (!username || !password || !confirmPassword) {
+        if (!username ) {
             Alert.alert('Error', 'All fields are required');
             return;
         }

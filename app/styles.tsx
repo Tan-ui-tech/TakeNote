@@ -141,7 +141,6 @@ export
     },
     deleteButton: {
       width: '100%',
-      borderWidth: 1,
       position: 'relative',
       bottom: '0%',
       left: '0%',
